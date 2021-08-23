@@ -23,6 +23,7 @@
     <ProjectGuid>{78F1BB23-773B-4A48-B026-A49A55FC84EE}</ProjectGuid>
     <RootNamespace>Test1readPly</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <ProjectName>readPly</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
