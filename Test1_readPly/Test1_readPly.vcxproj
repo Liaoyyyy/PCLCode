@@ -135,7 +135,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="readPly.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="pcl_fuc.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pcl_fuc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
