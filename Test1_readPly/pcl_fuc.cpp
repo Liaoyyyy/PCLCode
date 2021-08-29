@@ -183,13 +183,11 @@ bool RadiusOutlierRemoval(const std::string file_Name, pcl::PointCloud<pcl::Poin
 
 bool GridSegment(const std::string file_Name, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, const int grid_size) {
 	//对传入的点云数据依据坐标信息进行等间隔的网格分割
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr gridcloud(new  pcl::PointCloud<pcl::PointXYZRGB>);
-	int point_Count = 0;
-	int x_max = 0;
-	int y_max = 0;
-	int z_max = 0;
-	std::vector<int> index;
-	index.reserve(1000000);
+	double x_max = 0;
+	double y_max = 0;
+	double z_max = 0;
+	//std::vector<int> index;
+	//index.reserve(1000000);
 	//先计算输入点云的坐标区间：
 	for (int i = 0; i < cloud->size(); i++) {
 		x_max = ((cloud->points[i].x) > x_max ? (cloud->points[i].x) : x_max);
@@ -201,8 +199,92 @@ bool GridSegment(const std::string file_Name, pcl::PointCloud<pcl::PointXYZRGB>:
 	int y_size = floor(y_max / grid_size);
 	int z_size = floor(z_max / grid_size);
 	int grid_Num = x_size * y_size*z_size;
+	int x_cur_size = ceil(x_max / x_size);
+	int y_cur_size = ceil(y_max / y_size);
+	int z_cur_size = ceil(z_max / z_size);
 	//接下来对每一个网格的点云做分别的输出
+	int cur_grid_num = 1;
+	//进行分割
+	for (int i = 0; i < x_size; i++) {
+		for (int j = 0; j < y_size; j++) {
+			for (int k = 0; k < z_size; k++) {
+				std::cout << "共有" << grid_Num << "个网格点云，当前输出第" << cur_grid_num << "个网格." << std::endl;
+				//创建点云对象，用于存放计算得到的网格点云
+				int x_right = (i+1)* x_cur_size;
+				int x_left = i*x_cur_size;
+				int y_right = (j+1) * y_cur_size;
+				int y_left = j*y_cur_size;
+				int z_right = (k+1) * z_cur_size;
+				int z_left = k*z_cur_size;
+				pcl::PointCloud<pcl::PointXYZRGB>::Ptr gridcloud(new  pcl::PointCloud<pcl::PointXYZRGB>);
+				gridcloud->reserve(500000);
+				//对所有点进行循环
+				int point_Count = 0;
+				for (int index = 0; index < cloud->size(); index++) {
+					int x = cloud->points[index].x;
+					int y = cloud->points[index].y;
+					int z = cloud->points[index].z;
+					bool isx = (x > x_left) && (x <= x_right);
+					bool isy = (y > y_left) && (y <= y_right);
+					bool isz = (z > z_left) && (z <= z_right);
+					if ( isx&&isy&&isz
+						//(x>x_right)&&(x<=x_left)&&(y>y_left)&&(y<=y_left)&&(z>z_right)&&(z<=z_left)
+						/*(x > (i*x_cur_size)) && (cloud->points[i].x <= ((i + 1)*x_cur_size)))
+						&& ((cloud->points[i].y > (j*y_cur_size)) && (cloud->points[i].y <= ((j + 1)*y_cur_size)))
+						&& (cloud->points[i].z > (k*z_cur_size)) && (cloud->points[i].z <= ((k + 1)*z_cur_size))*/
+						) {
+						pcl::PointXYZRGB gridpoint;
+						gridpoint.x = cloud->points[index].x;
+						gridpoint.y = cloud->points[index].y;
+						gridpoint.z = cloud->points[index].z;
+						gridpoint.rgb = cloud->points[index].rgb;
+						gridpoint.a = cloud->points[index].a;
+						gridcloud->push_back(gridpoint);
+						std::cout << "第" << cur_grid_num << "网格读取到第" << point_Count << "个点" << std::endl;
 
+						//gridcloud->push_back(cloud->points[i]);
+						point_Count++;
+
+					}
+				}
+				//输出计算得到的点云。
+				if (!(gridcloud->empty())) {
+					std::string grid_file_Name = file_Name + "Num_"+std::to_string(cur_grid_num)+"_x_"
+						+ std::to_string(x_left) + "-" + std::to_string(x_right)
+						+ "_y_" + std::to_string(y_left) + "-" + std::to_string(y_right)
+						+ "_z_" + std::to_string(z_left) + "-" + std::to_string(z_right) + "_p_"+std::to_string(point_Count)+".ply";
+
+					myWritePly(grid_file_Name, gridcloud);
+
+					gridcloud->clear();
+					std::cout << "第" << cur_grid_num << "个网格点云输出完成，" << "包含" << point_Count << "个点." << std::endl;
+					cur_grid_num++;
+
+				}
+				else {
+					std::cout << "第" << cur_grid_num << "个网格点云为空。"<< std::endl;
+					cur_grid_num++;
+
+				}
+
+			}
+		}
+	}
+	return true;
+	/*for (int i = 0; i < grid_Num; i++) {
+		switch (i)
+		{
+		case 1:
+			std::cout << "第一个网格：" << std::endl;
+			if (cloud->points[i].x < grid_size && cloud->points[i].y < grid_size  && cloud->points[i].z < grid_size) {
+				point_Count++;
+				index.push_back(i);
+				std::cout << "找到" << point_Count << "个点" << std::endl;
+			}
+		default:
+			break;
+		}
+	}
 	for (int i = 0; i < cloud->size(); i++) {
 		std::cout << "范围：0-256" << std::endl;
 
@@ -223,8 +305,13 @@ bool GridSegment(const std::string file_Name, pcl::PointCloud<pcl::PointXYZRGB>:
 		gridpoint.a = cloud->points[index[j]].a;
 		gridcloud->push_back(gridpoint);
 	}
-	myWritePly(file_Name, gridcloud);
-	return true;
+	myWritePly(file_Name, gridcloud);*/
+
 }
 
-
+//点云的拼接函数
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr linkPoint(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud1, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud2) {
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr linked_Cloud(new  pcl::PointCloud<pcl::PointXYZRGB>);
+	*linked_Cloud = *cloud1 + *cloud2;
+	return linked_Cloud;
+}
