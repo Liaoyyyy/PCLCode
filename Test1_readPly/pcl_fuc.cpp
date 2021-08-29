@@ -12,6 +12,10 @@
 #include <pcl/io/obj_io.h>
 #include <string>
 #include <sstream>
+#include<pcl/point_cloud.h>
+#include<pcl/octree/octree_search.h>
+#include<vector>
+#include<math.h>
 
 //输入点云
 bool myLoadPly(const std::string fileName, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) {
@@ -175,6 +179,52 @@ bool RadiusOutlierRemoval(const std::string file_Name, pcl::PointCloud<pcl::Poin
 		myWritePly(FileName, cloud_filter);
 		return true;
 
+}
+
+bool GridSegment(const std::string file_Name, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, const int grid_size) {
+	//对传入的点云数据依据坐标信息进行等间隔的网格分割
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr gridcloud(new  pcl::PointCloud<pcl::PointXYZRGB>);
+	int point_Count = 0;
+	int x_max = 0;
+	int y_max = 0;
+	int z_max = 0;
+	std::vector<int> index;
+	index.reserve(1000000);
+	//先计算输入点云的坐标区间：
+	for (int i = 0; i < cloud->size(); i++) {
+		x_max = ((cloud->points[i].x) > x_max ? (cloud->points[i].x) : x_max);
+		y_max = ((cloud->points[i].y) > y_max ? (cloud->points[i].y) : y_max);
+		z_max = ((cloud->points[i].z) > z_max ? (cloud->points[i].z) : z_max);
+	}
+	//计算网格划分数量
+	int x_size = floor(x_max / grid_size);
+	int y_size = floor(y_max / grid_size);
+	int z_size = floor(z_max / grid_size);
+	int grid_Num = x_size * y_size*z_size;
+	//接下来对每一个网格的点云做分别的输出
+
+	for (int i = 0; i < cloud->size(); i++) {
+		std::cout << "范围：0-256" << std::endl;
+
+		if (cloud->points[i].x < 128 && cloud->points[i].y < 256 && cloud->points[i].z <128 ) {
+			point_Count++;
+			index.push_back(i);
+			std::cout << "找到" << point_Count << "个点" << std::endl;
+		}
+
+	}
+	gridcloud->resize(point_Count);
+	for (int j = 0; j < index.size(); j++) {
+		pcl::PointXYZRGB gridpoint;
+		gridpoint.x = cloud->points[index[j]].x;
+		gridpoint.y = cloud->points[index[j]].y;
+		gridpoint.z = cloud->points[index[j]].z;
+		gridpoint.rgb = cloud->points[index[j]].rgb;
+		gridpoint.a = cloud->points[index[j]].a;
+		gridcloud->push_back(gridpoint);
+	}
+	myWritePly(file_Name, gridcloud);
+	return true;
 }
 
 

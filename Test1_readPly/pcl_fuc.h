@@ -4,6 +4,9 @@
 #include <pcl/io/obj_io.h>
 #include <string>
 #include <sstream>
+#include<pcl/point_cloud.h>
+#include<pcl/octree/octree_search.h>
+#include<vector>
 
 //ply格式XYZRGB点云的载入函数
 bool myLoadPly(const std::string fileName, 
@@ -28,4 +31,7 @@ bool normalWriter(const int frames_beg, const int frame_end,
 //半径滤波算法
 bool RadiusOutlierRemoval(const std::string file_Name, 
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
+
+bool GridSegment(const std::string file_Name, 
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, const int grid_size);
 #pragma once
