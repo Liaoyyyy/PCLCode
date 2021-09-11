@@ -74,3 +74,13 @@ pcl::PointCloud < pcl::PointXYZ>::Ptr xyz_to_ply(char* fname);
 
 //对输入的xyzply点云加上空的颜色信息（用于质量评测）
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr plyxyz_to_xyzrgb(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+//对输入的一连串的点云（名字容器）进行整合。
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr LinkPoint(std::vector<std::string> FileName);
+
+//将点云数据依据kd数进行分割，每块1024个点，分别将对于点的坐标和法向量按对应索引值进行保存
+
+//bool kd_seg_xyzn(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud) {
+//
+//}
+//以八叉树为索引对点云进行分割
+bool octree_Seg(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);

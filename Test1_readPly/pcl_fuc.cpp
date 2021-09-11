@@ -9,6 +9,7 @@
 #include <pcl/filters/statistical_outlier_removal.h>//统计学滤波
 #include <pcl/surface/mls.h>//平滑操作相关头文件
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/octree/octree_search.h>//八叉树库
 #include <pcl/console/parse.h>
 #include <pcl/io/obj_io.h>
 #include <string>
@@ -568,4 +569,81 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr plyxyz_to_xyzrgb(pcl::PointCloud<pcl::Poi
 		cloud1->points[i].z = cloud->points[i].z;
 	}
 	return cloud1;
+}
+
+//点云融合算法
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr LinkPoint(std::vector<std::string> FileName) {
+	std::vector<pcl::PointCloud<pcl::PointXYZRGB>> PointClouds;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr Cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+	std::string name;
+	PointClouds.resize(FileName.size());
+	//把点云块放到同一个容器中
+	for (int i = 0; i < FileName.size(); i++) {
+		name = FileName[i];
+		myLoadPly(name, Cloud);
+		PointClouds.push_back(*Cloud);
+	}
+	//开始拼接
+	for (int i = 0; i < PointClouds.size(); i++) {
+
+		*Cloud = *Cloud + PointClouds[i];
+	}
+	return Cloud;
+}
+
+//以八叉树为索引对点云进行分割
+bool octree_Seg(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) {
+	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+	pcl::PointCloud<pcl::PointXYZRGB> search_Point;
+	//创建八叉树
+	float resolution = 512.0f; //分辨率，最小体素尺寸
+	//定义边界框
+	//int minX, minY, minZ, maxX, maxY, maxZ;
+	pcl::octree::OctreePointCloud<pcl::PointXYZRGB> octree(resolution);//实例化八叉树对象
+	/*pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB,
+	pcl::octree::OctreeContainerPointIndices, pcl::octree::OctreeContainerPointIndices> m_octree(resolution);*/
+	//用来放占用网格
+	std::vector<pcl::PointXYZRGB, Eigen::aligned_allocator<pcl::PointXYZRGB>> pointGrid;
+	//传入输入点数据
+	octree.setInputCloud(cloud);
+	//m_octree.setInputCloud(cloud);
+	//计算输入点云的边界框,调用点云数据集的维度并定义边界框
+	octree.defineBoundingBox();
+	//手动定义点云边界框
+	//octree.defineBoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+	//输入点添加到octree
+	octree.addPointsFromInputCloud();
+	//获得占用的体素中心
+	octree.getOccupiedVoxelCenters(pointGrid);
+	//m_octree.addPointsFromInputCloud();
+	//增长边界框知道点适合
+	//启用动态深度,当叶节点点数超出限定时才会扩张叶节点。
+	//octree.enableDynamicDepth(10000);
+	//设置被搜索点,用随机数填充
+	//pcl::PointXYZRGB searchPoint;
+	//std::vector<int> pointIdxVec;
+	//searchPoint.x = 1024.0f * rand() / (RAND_MAX + 1.0f);
+	//searchPoint.y = 1024.0f * rand() / (RAND_MAX + 1.0f);
+	//searchPoint.z = 1024.0f * rand() / (RAND_MAX + 1.0f);
+	//searchPoint.rgb = 1024.0f * rand() / (RAND_MAX + 1.0f);
+	//if (octree.voxelSearch(searchPoint, pointIdxVec)) {
+	//获得八叉树的深度
+	int depth = octree.getTreeDepth();
+	//获取叶数
+	int leafNum = octree.getLeafCount();
+	//std::vector<int> idx;
+	//auto it = m_octree.breadth_begin();
+	//it.getBranchContainer().getPointIndices(idx);
+
+	
+	//octree.
+	//}
+	//获取所有占用体素中心的 PointT 向量。
+	int sideLen = octree.getVoxelSquaredSideLen();
+	std::cout <<"深度：" <<depth <<"  叶数："<<leafNum<<"  叶级别体素立方体边长:"<<sideLen<< endl;
+	//for (int i = 0; i < idx.size(); i++) {
+	//	std::cout << idx[i] << endl;
+	//}
+	return true;       
+
 }
